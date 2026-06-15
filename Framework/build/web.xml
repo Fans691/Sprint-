@@ -9,7 +9,7 @@ version="2.4">
 
 <servlet>
 <servlet-name>ProcessRequestServlet</servlet-name>
-<servlet-class>ProcessRequest</servlet-class>
+<servlet-class>request.ProcessRequest</servlet-class>
 </servlet>
 
 
