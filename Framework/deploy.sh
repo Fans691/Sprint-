@@ -1,39 +1,30 @@
 #!/bin/bash
 
 # Définition des variables
-APP_NAME="sprint0"
+APP_NAME="framework"
 SRC_DIR="src/main/java"
-WEB_DIR="src/main/webapp"
 BUILD_DIR="build"
 LIB_DIR="lib"
-TOMCAT_WEBAPPS="/opt/tomcat/webapps"
 SERVLET_API_JAR="$LIB_DIR/servlet-api.jar"
-
-# Nettoyage et création du répertoire temporaire
-rm -rf $BUILD_DIR
-mkdir -p $BUILD_DIR/WEB-INF/classes
 
 # Compilation des fichiers Java avec le JAR des Servlets
 find $SRC_DIR -name "*.java" > sources.txt
-javac -cp $SERVLET_API_JAR -d $BUILD_DIR/WEB-INF/classes @sources.txt
+javac -cp "$LIB_DIR/*" -d $BUILD_DIR/ @sources.txt
 rm sources.txt
 
-#Copier uniquement web.xml
-cp -r $WEB_DIR/web.xml $BUILD_DIR/WEB-INF/
+# Copier les dépendances dans /lib
+mkdir -p $BUILD_DIR/lib
+cp -r $LIB_DIR/* $BUILD_DIR/lib/
 
-# Copier les fichiers web (web.xml, JSP, etc.)
-cp -r $WEB_DIR/* $BUILD_DIR/
+# Revenir vers le repertoire source du projet
+# cd ..
 
-# Générer le fichier .war dans le dossier build
+# Générer le fichier .jar dans le dossier build
 cd $BUILD_DIR || exit
-jar -cvf $APP_NAME.war *
-cd ..
-
-# Déploiement dans Tomcat
-cp -f $BUILD_DIR/$APP_NAME.war $TOMCAT_WEBAPPS/
+jar -cvf $APP_NAME.jar *
 
 echo ""
 
-echo "Déploiement terminé. Redémarrez Tomcat si nécessaire."
+echo "JAR creee."
 
 echo ""
