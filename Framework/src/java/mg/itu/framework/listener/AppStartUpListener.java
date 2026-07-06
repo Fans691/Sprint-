@@ -22,39 +22,39 @@ public class AppStartUpListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
 
-        // try {
+        try {
 
-        //     String packageName = sce.getServletContext().getInitParameter("packageNames");
+            String packageName = sce.getServletContext().getInitParameter("packageNames");
 
-        //     if (packageName == null || packageName.trim().isEmpty()) {
-        //         throw new RuntimeException(
-        //                 "Le context-param 'packageNames' est introuvable dans web.xml.");
-        //     }
+            if (packageName == null || packageName.trim().isEmpty()) {
+                throw new RuntimeException(
+                        "Le context-param 'packageNames' est introuvable dans web.xml.");
+            }
 
-        //     List<String> packageNames = List.of(packageName.split(";"));
+            List<String> packageNames = List.of(packageName.split(";"));
 
-        //     System.out.println("Packages scannés : " + packageNames);
+            System.out.println("Packages scannés : " + packageNames);
 
-        //     List<Class<?>> controllers = ClassUtil.getClassesWithAnnotation(
-        //             packageNames,
-        //             listUrlMapping,
-        //             Controller.class);
+            List<Class<?>> controllers = ClassUtil.getClassesWithAnnotation(
+                    packageNames,
+                    listUrlMapping,
+                    Controller.class);
 
-        //     for (Class<?> controller : controllers) {
-        //         listController.add(controller.getName());
-        //         System.out.println("Controller trouvé : " + controller.getName());
-        //     }
+            for (Class<?> controller : controllers) {
+                listController.add(controller.getName());
+                System.out.println("Controller trouvé : " + controller.getName());
+            }
 
-        //     sce.getServletContext().setAttribute("listController", listController);
-        //     sce.getServletContext().setAttribute("listUrlMapping", listUrlMapping);
+            sce.getServletContext().setAttribute("listController", listController);
+            sce.getServletContext().setAttribute("listUrlMapping", listUrlMapping);
 
-        //     System.out.println("Application initialisée avec succès.");
+            System.out.println("Application initialisée avec succès.");
 
-        // } catch (Throwable e) {
-        //     System.err.println("Erreur lors de l'initialisation de l'application :");
-        //     e.printStackTrace();
-        //     throw new RuntimeException(e);
-        // }
+        } catch (Throwable e) {
+            System.err.println("Erreur lors de l'initialisation de l'application :");
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
