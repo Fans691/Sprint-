@@ -80,13 +80,14 @@ do
     [ -f "$jarfile" ] || continue
 
     echo "Extraction de $(basename "$jarfile")"
+    jarpath="$(realpath "$jarfile")"
 
     # Pour ignorer servlet-api.jar :
     # if [ "$(basename "$jarfile")" != "servlet-api.jar" ]; then
 
     (
         cd "$CLASSES_DIR"
-        jar xf "$(realpath "$jarfile")"
+        jar xf "$jarpath"
     )
 
     # fi
