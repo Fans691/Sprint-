@@ -27,8 +27,8 @@ public class ClassUtil {
                 for (Method method : clazz.getDeclaredMethods()) {
                     if (method.isAnnotationPresent(UrlMapping.class)) { 
                         UrlMapping urlMapping = method.getAnnotation(UrlMapping.class);
-                        String url = urlMapping.url();
-                        String methode = urlMapping.method();
+                        String url = normalizeUrl(urlMapping.url());
+                        String methode = normalizeMethod(urlMapping.method());
                         MethodClassMapping mapping = new MethodClassMapping(clazz, method);
                         UrlMethod urlMethod = new UrlMethod(url, methode);
                         if(urlMappings.containsKey(urlMethod)) throw new RuntimeException("URL "+ url + " (" + methode +")" + "existe deja.");
@@ -58,6 +58,25 @@ public class ClassUtil {
         }
 
         return classes;
+    }
+
+    private static String normalizeUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return "/";
+        }
+
+        String normalizedUrl = url.trim();
+        if (!normalizedUrl.startsWith("/")) {
+            normalizedUrl = "/" + normalizedUrl;
+        }
+        return normalizedUrl;
+    }
+
+    private static String normalizeMethod(String method) {
+        if (method == null || method.trim().isEmpty()) {
+            return "GET";
+        }
+        return method.trim().toUpperCase();
     }
 
 }

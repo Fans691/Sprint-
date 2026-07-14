@@ -9,7 +9,6 @@ import mg.itu.framework.util.ClassUtil;
 import mg.itu.framework.util.MethodClassMapping;
 import mg.itu.framework.util.UrlMethod;
 
-@Controller
 public class FrontControllerServlet extends HttpServlet {
     private List<String> listController = new ArrayList<>();
     private Map<UrlMethod, MethodClassMapping> listUrlMapping = new HashMap<>();
