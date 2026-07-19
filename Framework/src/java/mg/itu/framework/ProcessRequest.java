@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import mg.itu.framework.util.MethodClassMapping;
 import mg.itu.framework.util.MethodExecutor;
 import mg.itu.framework.util.ModelAndView;
+import mg.itu.framework.util.SpringContextManager;
 import mg.itu.framework.util.UrlMethod;
 
 @WebServlet(name = "ProcessRequest", urlPatterns = "/*")
@@ -24,6 +25,7 @@ public class ProcessRequest extends HttpServlet {
     private static final String URL_MAPPINGS_ATTRIBUTE = "listUrlMapping";
 
     private Map<UrlMethod, MethodClassMapping> urlMap;
+    private Object springContext;
     private String prefix;
     private String suffix;
 
@@ -32,6 +34,7 @@ public class ProcessRequest extends HttpServlet {
     public void init() throws ServletException {
         ServletContext context = getServletContext();
         this.urlMap = (Map<UrlMethod, MethodClassMapping>) context.getAttribute(URL_MAPPINGS_ATTRIBUTE);
+        this.springContext = context.getAttribute(SpringContextManager.SPRING_CONTEXT_ATTRIBUTE);
         this.prefix = context.getInitParameter("view-prefix");
         this.suffix = context.getInitParameter("view-suffix");
 
@@ -85,7 +88,7 @@ public class ProcessRequest extends HttpServlet {
         }
 
         try {
-            Object obj = MethodExecutor.execute(mapping);
+            Object obj = MethodExecutor.execute(mapping, springContext);
 
             if (obj instanceof ModelAndView) {
                 ModelAndView mv = (ModelAndView) obj;

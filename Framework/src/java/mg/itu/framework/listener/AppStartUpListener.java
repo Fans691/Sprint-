@@ -15,6 +15,7 @@ import jakarta.servlet.annotation.WebListener;
 import mg.itu.framework.annotation.Controller;
 import mg.itu.framework.util.ClassUtil;
 import mg.itu.framework.util.MethodClassMapping;
+import mg.itu.framework.util.SpringContextManager;
 import mg.itu.framework.util.UrlMethod;
 
 @WebListener
@@ -30,7 +31,9 @@ public class AppStartUpListener implements ServletContextListener {
         try {
             List<String> packageNames = resolvePackageNames(servletContext);
             Map<UrlMethod, MethodClassMapping> urlMappings = new HashMap<>();
-            List<String> controllers = findControllerNames(packageNames, urlMappings);
+            List<Class<?>> controllerClasses = findControllerClasses(packageNames, urlMappings);
+            List<String> controllers = getControllerNames(controllerClasses);
+            SpringContextManager.initialize(servletContext, packageNames, controllerClasses);
 
             servletContext.setAttribute(CONTROLLERS_ATTRIBUTE, Collections.unmodifiableList(controllers));
             servletContext.setAttribute(URL_MAPPINGS_ATTRIBUTE, Collections.unmodifiableMap(urlMappings));
@@ -53,6 +56,7 @@ public class AppStartUpListener implements ServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         ServletContext servletContext = sce.getServletContext();
+        SpringContextManager.close(servletContext);
         servletContext.removeAttribute(CONTROLLERS_ATTRIBUTE);
         servletContext.removeAttribute(URL_MAPPINGS_ATTRIBUTE);
         servletContext.log("Application arrêtée.");
@@ -83,15 +87,17 @@ public class AppStartUpListener implements ServletContextListener {
         return new ArrayList<>(packageNames);
     }
 
-    private List<String> findControllerNames(
+    private List<Class<?>> findControllerClasses(
             List<String> packageNames,
             Map<UrlMethod, MethodClassMapping> urlMappings) {
 
-        List<Class<?>> controllerClasses = ClassUtil.getClassesWithAnnotation(
+        return ClassUtil.getClassesWithAnnotation(
                 packageNames,
                 urlMappings,
                 Controller.class);
+    }
 
+    private List<String> getControllerNames(List<Class<?>> controllerClasses) {
         List<String> controllerNames = new ArrayList<>();
         for (Class<?> controllerClass : controllerClasses) {
             controllerNames.add(controllerClass.getName());
