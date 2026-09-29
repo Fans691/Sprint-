@@ -76,6 +76,7 @@ public final class SpringContextManager {
         try {
             Method closeMethod = springContext.getClass().getMethod("close");
             closeMethod.invoke(springContext);
+           
             servletContext.log("Conteneur Spring fermé.");
         } catch (ReflectiveOperationException e) {
             servletContext.log("Impossible de fermer correctement le conteneur Spring.", e);

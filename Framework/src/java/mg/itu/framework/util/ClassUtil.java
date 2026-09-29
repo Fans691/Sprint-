@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import mg.itu.framework.annotation.ApiRest;
 
 
 import java.lang.annotation.Annotation;
@@ -33,6 +34,8 @@ public class ClassUtil {
                         UrlMethod urlMethod = new UrlMethod(url, methode);
                         if(urlMappings.containsKey(urlMethod)) throw new RuntimeException("URL "+ url + " (" + methode +")" + "existe deja.");
                         urlMappings.put(urlMethod, mapping);
+                    } else if (annotation == ApiRest.class) {
+
                     }
                 }
             }
@@ -77,6 +80,10 @@ public class ClassUtil {
             return "GET";
         }
         return method.trim().toUpperCase();
+    }
+
+    private static void afficherEnJSON(Method m, Class<?> clazz , ApiRest rest) {
+
     }
 
 }
