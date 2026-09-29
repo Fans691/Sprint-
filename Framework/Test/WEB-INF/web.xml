@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+    version="6.0">
+
+    <!-- <context-param>
+        <param-name>view-prefix</param-name>
+        <param-value>/WEB-INF/templates/</param-value>
+    </context-param>
+    <context-param>
+        <param-name>view-suffix</param-name>
+        <param-value>.jsp</param-value>
+    </context-param>
+
+    <context-param>
+        <param-name>packageNames</param-name>
+        <param-value>main.java.controller</param-value>
+    </context-param>
+
+    <servlet>
+        <servlet-name>FrameWorkController</servlet-name>
+        <servlet-class>mg.itu.framework.ProcessRequest</servlet-class>
+        <load-on-startup>2</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>FrameWorkController</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping> -->
+
+</web-app>

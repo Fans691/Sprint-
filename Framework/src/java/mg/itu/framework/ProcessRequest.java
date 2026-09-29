@@ -91,25 +91,25 @@ public class ProcessRequest extends HttpServlet {
         try {
             Object obj = MethodExecutor.execute(mapping, springContext);
 
-            if (mapping.getMethode().isAnnotationPresent(ApiRest.class)) {
-                res.setContentType("application/json;charset=UTF-8");
-                PrintWriter out = res.getWriter();
+            // if (mapping.getMethode().isAnnotationPresent(ApiRest.class)) {
+            //     res.setContentType("application/json;charset=UTF-8");
+            //     PrintWriter out = res.getWriter();
 
-                if (obj instanceof String) {
-                    out.print(obj);
-                } else {
-                    try {
-                        Class<?> objectMapperClass = Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
-                        Object objectMapper = objectMapperClass.getDeclaredConstructor().newInstance();
-                        Object json = objectMapperClass.getMethod("writeValueAsString", Object.class)
-                                .invoke(objectMapper, obj);
-                        out.print(json);
-                    } catch (Exception e) {
-                        out.print(obj == null ? "null" : obj.toString());
-                    }
-                }
-                return;
-            }
+            //     if (obj instanceof String) {
+            //         out.print(obj);
+            //     } else {
+            //         try {
+            //             Class<?> objectMapperClass = Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
+            //             Object objectMapper = objectMapperClass.getDeclaredConstructor().newInstance();
+            //             Object json = objectMapperClass.getMethod("writeValueAsString", Object.class)
+            //                     .invoke(objectMapper, obj);
+            //             out.print(json);
+            //         } catch (Exception e) {
+            //             out.print(obj == null ? "null" : obj.toString());
+            //         }
+            //     }
+            //     return;
+            // }
 
             if (obj instanceof ModelAndView) {
                 ModelAndView mv = (ModelAndView) obj;
