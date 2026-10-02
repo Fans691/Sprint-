@@ -4,12 +4,14 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
 import mg.itu.framework.annotation.UrlMapping;
+import mg.itu.framework.model.MethodClassMapping;
+import mg.itu.framework.model.UrlMethod;
+
 import java.lang.reflect.Method;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
-import mg.itu.framework.annotation.ApiRest;
 
 
 import java.lang.annotation.Annotation;
@@ -28,14 +30,16 @@ public class ClassUtil {
                 for (Method method : clazz.getDeclaredMethods()) {
                     if (method.isAnnotationPresent(UrlMapping.class)) { 
                         UrlMapping urlMapping = method.getAnnotation(UrlMapping.class);
-                        String url = normalizeUrl(urlMapping.url());
-                        String methode = normalizeMethod(urlMapping.method());
+                        String url = urlMapping.url();
+                        String methode = urlMapping.method();
                         MethodClassMapping mapping = new MethodClassMapping(clazz, method);
                         UrlMethod urlMethod = new UrlMethod(url, methode);
-                        if(urlMappings.containsKey(urlMethod)) throw new RuntimeException("URL "+ url + " (" + methode +")" + "existe deja.");
+                        if(urlMappings.containsKey(urlMethod)) {
+                            System.out.println("----------------------------------------------");
+                            System.out.println("URL "+ url + " (" + methode +")" + "existe deja.");
+                            throw new RuntimeException("URL "+ url + " (" + methode +")" + "existe deja.");
+                        }
                         urlMappings.put(urlMethod, mapping);
-                    } else if (annotation == ApiRest.class) {
-
                     }
                 }
             }
@@ -61,29 +65,6 @@ public class ClassUtil {
         }
 
         return classes;
-    }
-
-    private static String normalizeUrl(String url) {
-        if (url == null || url.trim().isEmpty()) {
-            return "/";
-        }
-
-        String normalizedUrl = url.trim();
-        if (!normalizedUrl.startsWith("/")) {
-            normalizedUrl = "/" + normalizedUrl;
-        }
-        return normalizedUrl;
-    }
-
-    private static String normalizeMethod(String method) {
-        if (method == null || method.trim().isEmpty()) {
-            return "GET";
-        }
-        return method.trim().toUpperCase();
-    }
-
-    private static void afficherEnJSON(Method m, Class<?> clazz , ApiRest rest) {
-
     }
 
 }
