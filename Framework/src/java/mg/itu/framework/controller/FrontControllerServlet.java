@@ -142,18 +142,16 @@ public class FrontControllerServlet extends HttpServlet {
             } else if (parameterTypes.length == 1 && parameterTypes[0].isAssignableFrom(springContext.getClass())) {
                 result = mapping.getMethode().invoke(instance, springContext);
             } else {
-                out.println("La méthode " + mapping.getMethode().getName() +
-                        " de la classe " + mapping.getClasse().getName() +
-                        " a des paramètres non supportés.");
-                return;
+                Object[] parameters = getMethodParameters(req, parameterTypes);
+                result = mapping.getMethode().invoke(instance, parameters);
             }
+            
             if (mapping.getMethode().isAnnotationPresent(WebApi.class)) {
 
                 res.setContentType("application/json");
                 res.setCharacterEncoding("UTF-8");
 
                 PrintWriter jsonWriter = res.getWriter();
-
                 if (result instanceof String) {
                     jsonWriter.println((String) result);
 
@@ -184,14 +182,82 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
-    public void save(HttpServletRequest req, HttpServletResponse res) 
-        throws ServletException, IOException {
-            String nom = (String) req.getParameter("nom");
-            int age = Integer.parseInt(req.getParameter("age"));
-            String email = (String) req.getParameter("email");
+    private Object convertParameter(String value, Class<?> targetType) {
+        if (targetType == String.class) {
+            return value;
 
-            System.out.println("Nom: " + nom);
-            System.out.println("Age: " + age);
-            System.out.println("Email: " + email);
+        } else if (targetType == int.class || targetType == Integer.class) {
+            return Integer.parseInt(value);
+
+        } else if (targetType == long.class || targetType == Long.class) {
+            return Long.parseLong(value);
+
+        } else if (targetType == double.class || targetType == Double.class) {
+            return Double.parseDouble(value);
+
+        } else if (targetType == float.class || targetType == Float.class) {
+            return Float.parseFloat(value);
+
+        } else if (targetType == boolean.class || targetType == Boolean.class) {
+            return Boolean.parseBoolean(value);
+
+        } else if (targetType == short.class || targetType == Short.class) {
+            return Short.parseShort(value);
+
+        } else if (targetType == byte.class || targetType == Byte.class) {
+            return Byte.parseByte(value);
+
+        } else if (targetType == char.class || targetType == Character.class) {
+            return value.charAt(0);
+        }
+
+        throw new IllegalArgumentException(
+            "Type non supporté : " + targetType.getName()
+        );
+    }
+
+    private Object[] getMethodParameters(HttpServletRequest req, Class<?>[] parameterTypes) {
+        Object[] parameters = new Object[parameterTypes.length];
+        Enumeration<String> parameterNames = req.getParameterNames();
+        List<String> names = new ArrayList<>();
+        while (parameterNames.hasMoreElements()) {
+            names.add(parameterNames.nextElement());
+        }
+        if (names.size() != parameterTypes.length) {
+            throw new IllegalArgumentException(
+                "Nombre de parametres incorrect. Attendu : "
+                + parameterTypes.length
+                + ", reçu : "
+                + names.size()
+            );
+        }
+
+        for (int i = 0; i < parameterTypes.length; i++) {
+
+            String parameterName = names.get(i);
+            String value = req.getParameter(parameterName);
+
+            parameters[i] = convertParameter(
+                value,
+                parameterTypes[i]
+            );
+        }
+
+        return parameters;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
