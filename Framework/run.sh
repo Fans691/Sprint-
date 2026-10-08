@@ -1,24 +1,19 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # ============================================================
-# BUILD FRAMEWORK
+#  BUILD FRAMEWORK
 # ============================================================
 
-set -e
+set -euo pipefail
 
-# Se placer dans le dossier du script
-cd "$(dirname "$0")"
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# --------------------------
-# VARIABLES
-# --------------------------
 APP_NAME="Framework"
-SRC_DIR="src/java"
-WEB_DIR="src/webapps"
-BUILD_DIR="build"
+SRC_DIR="$ROOT_DIR/src/java"
+WEB_DIR="$ROOT_DIR/src/webapps"
+BUILD_DIR="$ROOT_DIR/build"
 CLASSES_DIR="$BUILD_DIR/WEB-INF/classes"
 LIB_DIR="$BUILD_DIR/WEB-INF/lib"
-LIB="lib"
+CP="$ROOT_DIR/lib/*"
 
 echo
 echo "==================================="
@@ -26,91 +21,82 @@ echo "Nettoyage..."
 echo "==================================="
 
 rm -rf "$BUILD_DIR"
-
-mkdir -p "$CLASSES_DIR"
-mkdir -p "$LIB_DIR"
+mkdir -p "$CLASSES_DIR" "$LIB_DIR"
 
 echo
 echo "==================================="
 echo "Compilation Java..."
 echo "==================================="
 
-find "$SRC_DIR" -name "*.java" > /tmp/sources.txt
-
-if ls "$LIB"/*.jar >/dev/null 2>&1; then
-    CLASSPATH=$(printf "%s:" "$LIB"/*.jar)
-    CLASSPATH=${CLASSPATH%:}
-
-    javac \
-        -cp "$CLASSPATH" \
-        -d "$CLASSES_DIR" \
-        @/tmp/sources.txt
-else
-    javac \
-        -d "$CLASSES_DIR" \
-        @/tmp/sources.txt
-fi
-
-RESULT=$?
-
-rm -f /tmp/sources.txt
-
-if [ $RESULT -ne 0 ]; then
-    echo
-    echo "ERREUR : Compilation échouée."
+mapfile -d '' sources < <(find "$SRC_DIR" -type f -name '*.java' -print0)
+if ((${#sources[@]} == 0)); then
+    echo "ERREUR : Aucun fichier Java trouve dans $SRC_DIR." >&2
     exit 1
 fi
+javac -cp "$CP" -d "$CLASSES_DIR" "${sources[@]}"
 
 echo
 echo "==================================="
 echo "Copie des ressources Web..."
 echo "==================================="
-
 if [ -d "$WEB_DIR" ]; then
-    cp -R "$WEB_DIR"/. "$BUILD_DIR"/
+    cp -a "$WEB_DIR"/. "$BUILD_DIR/"
 fi
 
 echo
 echo "==================================="
 echo "Extraction des JARs..."
 echo "==================================="
-
-for jarfile in "$LIB"/*.jar
-do
-    [ -f "$jarfile" ] || continue
-
-    echo "Extraction de $(basename "$jarfile")"
-    jarpath="$(realpath "$jarfile")"
-
-    # Pour ignorer servlet-api.jar :
-    # if [ "$(basename "$jarfile")" != "servlet-api.jar" ]; then
-
-    (
-        cd "$CLASSES_DIR"
-        jar xf "$jarpath"
-    )
-
-    # fi
+for jar in "$ROOT_DIR/lib/"*.jar; do
+    if [ -f "$jar" ]; then
+        echo "Extraction de $(basename "$jar")"
+        (cd "$CLASSES_DIR" && jar xf "$jar")
+    fi
 done
 
 echo
 echo "==================================="
-echo "Création du Framework.jar..."
+echo "Fusion des fichiers SPI Spring..."
 echo "==================================="
+merge_spring_file() {
+    local resource="$1"
+    local output="$CLASSES_DIR/META-INF/$resource"
+    local found=false
 
-jar cf "$LIB_DIR/$APP_NAME.jar" -C "$CLASSES_DIR" .
+    rm -f "$output"
+    for jar in "$ROOT_DIR/lib/"*.jar; do
+        if [ -f "$jar" ] && jar tf "$jar" | grep -qx "META-INF/$resource"; then
+            mkdir -p "$ROOT_DIR/.spring-merge"
+            rm -rf "$ROOT_DIR/.spring-merge"/*
+            (cd "$ROOT_DIR/.spring-merge" && jar xf "$jar" "META-INF/$resource")
+            cat "$ROOT_DIR/.spring-merge/META-INF/$resource" >> "$output"
+            printf '\n' >> "$output"
+            found=true
+        fi
+    done
 
-if [ $? -ne 0 ]; then
-    echo "ERREUR : Création du JAR impossible."
-    exit 1
-fi
+    if [ "$found" = false ]; then
+        rm -f "$output"
+    else
+        echo "Fichier META-INF/$resource fusionne."
+    fi
+    rm -rf "$ROOT_DIR/.spring-merge"
+}
+
+merge_spring_file "spring.handlers"
+merge_spring_file "spring.schemas"
 
 echo
-echo "JAR créé :"
-echo "$LIB_DIR/$APP_NAME.jar"
+echo "==================================="
+echo "Creation du Framework.jar..."
+echo "==================================="
+JAR_PATH="$LIB_DIR/$APP_NAME.jar"
+jar cf "$JAR_PATH" -C "$CLASSES_DIR" .
+echo
+echo "JAR cree :"
+echo "$JAR_PATH"
 
 echo
 echo "==================================="
-echo "BUILD TERMINÉ"
+echo "BUILD TERMINE"
 echo "==================================="
-echo

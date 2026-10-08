@@ -1,109 +1,66 @@
 package mg.itu.framework.listener;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import mg.itu.framework.annotation.Controller;
+import mg.itu.framework.model.MethodClassMapping;
+import mg.itu.framework.model.UrlMethod;
 import mg.itu.framework.util.ClassUtil;
-import mg.itu.framework.util.MethodClassMapping;
-import mg.itu.framework.util.SpringContextManager;
-import mg.itu.framework.util.UrlMethod;
 
 @WebListener
 public class AppStartUpListener implements ServletContextListener {
 
-    private static final String PACKAGE_NAMES_PARAM = "packageNames";
-    private static final String CONTROLLERS_ATTRIBUTE = "listController";
-    private static final String URL_MAPPINGS_ATTRIBUTE = "listUrlMapping";
-
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        ServletContext servletContext = sce.getServletContext();
         try {
-            List<String> packageNames = resolvePackageNames(servletContext);
-            Map<UrlMethod, MethodClassMapping> urlMappings = new HashMap<>();
-            List<Class<?>> controllerClasses = findControllerClasses(packageNames, urlMappings);
-            List<String> controllers = getControllerNames(controllerClasses);
-            SpringContextManager.initialize(servletContext, packageNames, controllerClasses);
+            ServletContext context = sce.getServletContext();
+            ApplicationContext springContext = WebApplicationContextUtils.getWebApplicationContext(context);
 
-            servletContext.setAttribute(CONTROLLERS_ATTRIBUTE, Collections.unmodifiableList(controllers));
-            servletContext.setAttribute(URL_MAPPINGS_ATTRIBUTE, Collections.unmodifiableMap(urlMappings));
+            if (springContext == null) {
+                throw new RuntimeException("Le contexte Spring n'a pas pu être récupéré. ");
+            }
 
-            servletContext.log(String.format(
-                    "Application initialisée avec succès : %d package(s), %d contrôleur(s), %d mapping(s) URL.",
-                    packageNames.size(),
-                    controllers.size(),
-                    urlMappings.size()));
+            String packageName = context.getInitParameter("packageNames");
+            String prefix = context.getInitParameter("prefix");
+            String suffix = context.getInitParameter("suffix");
 
-        } catch (RuntimeException e) {
-            servletContext.log("Erreur lors de l'initialisation de l'application.", e);
-            throw e;
+            if (packageName == null || packageName.trim().isEmpty()) {
+                throw new RuntimeException("Le context-param 'packageNames' est introuvable dans web.xml.");
+            }
+
+            List<String> packageNames = List.of(packageName.split(";"));
+            List<String> listController = new ArrayList<>();
+            Map<UrlMethod, MethodClassMapping> listUrlMapping = new HashMap<>();
+
+            List<Class<?>> controllers = ClassUtil.getClassesWithAnnotation(
+                    packageNames,
+                    listUrlMapping,
+                    Controller.class);
+
+            context.setAttribute("listController", listController);
+            context.setAttribute("listUrlMapping", listUrlMapping);
+            context.setAttribute("prefix", prefix);
+            context.setAttribute("suffix", suffix);
+            context.setAttribute("springContext", springContext);
+
         } catch (Exception e) {
-            servletContext.log("Erreur lors de l'initialisation de l'application.", e);
-            throw new IllegalStateException("Impossible d'initialiser l'application.", e);
+            throw new RuntimeException(e);
+
         }
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        ServletContext servletContext = sce.getServletContext();
-        SpringContextManager.close(servletContext);
-        servletContext.removeAttribute(CONTROLLERS_ATTRIBUTE);
-        servletContext.removeAttribute(URL_MAPPINGS_ATTRIBUTE);
-        servletContext.log("Application arrêtée.");
     }
-
-    private List<String> resolvePackageNames(ServletContext servletContext) {
-        String rawPackageNames = servletContext.getInitParameter(PACKAGE_NAMES_PARAM);
-
-        if (rawPackageNames == null || rawPackageNames.trim().isEmpty()) {
-            throw new IllegalStateException(
-                    "Le context-param '" + PACKAGE_NAMES_PARAM + "' est introuvable ou vide dans web.xml.");
-        }
-
-        Set<String> packageNames = new LinkedHashSet<>();
-        for (String packageName : rawPackageNames.split(";")) {
-            String trimmedPackageName = packageName.trim();
-            if (!trimmedPackageName.isEmpty()) {
-                packageNames.add(trimmedPackageName);
-            }
-        }
-
-        if (packageNames.isEmpty()) {
-            throw new IllegalStateException(
-                    "Le context-param '" + PACKAGE_NAMES_PARAM + "' ne contient aucun package valide.");
-        }
-
-        servletContext.log("Packages scannés : " + packageNames);
-        return new ArrayList<>(packageNames);
-    }
-
-    private List<Class<?>> findControllerClasses(
-            List<String> packageNames,
-            Map<UrlMethod, MethodClassMapping> urlMappings) {
-
-        return ClassUtil.getClassesWithAnnotation(
-                packageNames,
-                urlMappings,
-                Controller.class);
-    }
-
-    private List<String> getControllerNames(List<Class<?>> controllerClasses) {
-        List<String> controllerNames = new ArrayList<>();
-        for (Class<?> controllerClass : controllerClasses) {
-            controllerNames.add(controllerClass.getName());
-        }
-
-        return controllerNames;
-    }
-
 }
