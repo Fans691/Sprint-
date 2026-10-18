@@ -16,6 +16,7 @@ import mg.itu.framework.annotation.WebApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Controller
+@MultipartConfig
 public class FrontControllerServlet extends HttpServlet {
 
     private List<String> listController = new ArrayList<>();
@@ -184,7 +185,6 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
 }
-
 
 
 
