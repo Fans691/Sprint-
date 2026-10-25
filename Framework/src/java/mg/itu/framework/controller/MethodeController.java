@@ -1,5 +1,7 @@
 package mg.itu.framework.controller;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -12,7 +14,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 
 import mg.itu.framework.annotation.Binding;
 import mg.itu.framework.session.MySession;
@@ -42,8 +46,12 @@ public class MethodeController {
 
             Binding binding = method.getParameters()[i].getAnnotation(Binding.class);
             if (binding != null) {
-                parameters[i] = bindObject(request, parameterTypes[i], binding.value());
+                parameters[i] = bindParameter(request, parameterTypes[i], binding.value());
             } else {
+                if (parameterTypes[i] == MapFile.class || parameterTypes[i] == MapFile[].class) {
+                    parameters[i] = bindFiles(request, parameterTypes[i], null);
+                    continue;
+                }
                 if (scalarParameterIndex >= parameterNames.size()) {
                     throw new IllegalArgumentException("Parametre manquant pour le type "
                             + parameterTypes[i].getName());
@@ -55,6 +63,86 @@ public class MethodeController {
         }
 
         return parameters;
+    }
+
+    private Object bindParameter(HttpServletRequest request, Class<?> targetType, String name) {
+        if (targetType == MapFile.class || targetType == MapFile[].class) {
+            return bindFiles(request, targetType, name);
+        }
+        return bindObject(request, targetType, name);
+    }
+
+    private Object bindFiles(HttpServletRequest request, Class<?> targetType, String name) {
+        try {
+            if (targetType == MapFile.class) {
+                Part part = name == null || name.isEmpty()
+                        ? firstFilePart(request)
+                        : request.getPart(name);
+                if (part == null) {
+                    throw new IllegalArgumentException("Fichier introuvable pour le champ " + name);
+                }
+                return mapFile(part);
+            }
+
+            List<MapFile> files = new ArrayList<>();
+            if (name == null || name.isEmpty()) {
+                for (Part part : request.getParts()) {
+                    if (isFilePart(part)) {
+                        files.add(mapFile(part));
+                    }
+                }
+            } else {
+                for (Part part : request.getParts()) {
+                    if (name.equals(part.getName()) && isFilePart(part)) {
+                        files.add(mapFile(part));
+                    }
+                }
+            }
+            return files.toArray(new MapFile[0]);
+        } catch (IOException | ServletException exception) {
+            throw new IllegalArgumentException("Impossible de lire le fichier envoye.", exception);
+        }
+    }
+
+    private Part firstFilePart(HttpServletRequest request) throws IOException, ServletException {
+        for (Part part : request.getParts()) {
+            if (isFilePart(part)) {
+                return part;
+            }
+        }
+        return null;
+    }
+
+    private boolean isFilePart(Part part) {
+        return part.getSubmittedFileName() != null && !part.getSubmittedFileName().isEmpty();
+    }
+
+    private MapFile mapFile(Part part) throws IOException {
+        String fileName = getFileName(part);
+        return new MapFile(fileName, readData(part), getExtension(fileName));
+    }
+
+    private String getFileName(Part part) {
+        String submittedFileName = part.getSubmittedFileName();
+        int separator = Math.max(submittedFileName.lastIndexOf('/'), submittedFileName.lastIndexOf('\\'));
+        return separator >= 0 ? submittedFileName.substring(separator + 1) : submittedFileName;
+    }
+
+    private byte[] readData(Part part) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int read;
+        try (java.io.InputStream input = part.getInputStream()) {
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+        }
+        return output.toByteArray();
+    }
+
+    private String getExtension(String fileName) {
+        int dot = fileName.lastIndexOf('.');
+        return dot > 0 && dot < fileName.length() - 1 ? fileName.substring(dot + 1) : "";
     }
 
     private List<String> getParameterNames(HttpServletRequest request) {
