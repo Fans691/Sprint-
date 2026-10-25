@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import jakarta.servlet.ServletContext;
+import mg.itu.framework.session.MySession;
 
 public final class SpringContextManager {
 
@@ -32,6 +33,7 @@ public final class SpringContextManager {
             Method scanMethod = contextClass.getMethod("scan", String[].class);
             scanMethod.invoke(springContext, (Object) packageNames.toArray(new String[0]));
             registerControllerBeans(servletContext, contextClass, springContext, controllerClasses);
+            registerSessionBean(contextClass, springContext);
 
             Method refreshMethod = contextClass.getMethod("refresh");
             refreshMethod.invoke(springContext);
@@ -64,6 +66,34 @@ public final class SpringContextManager {
                     + "les contrôleurs doivent aussi être annotés avec @Component.");
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("Impossible d'enregistrer les contrôleurs dans Spring.", e);
+        }
+    }
+
+    public static void registerSessionBean(Object springContext) {
+        if (springContext == null || containsBean(springContext, MySession.class)) {
+            return;
+        }
+
+        try {
+            Method getBeanFactoryMethod = springContext.getClass().getMethod("getBeanFactory");
+            Object beanFactory = getBeanFactoryMethod.invoke(springContext);
+            Method registerSingletonMethod =
+                    beanFactory.getClass().getMethod("registerSingleton", String.class, Object.class);
+            registerSingletonMethod.invoke(beanFactory, "mySession", new MySession());
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Impossible d'enregistrer la session dans le contexte Spring.", e);
+        }
+    }
+
+    private static boolean containsBean(Object springContext, Class<?> beanClass) {
+        try {
+            Method getBeanMethod = springContext.getClass().getMethod("getBean", Class.class);
+            getBeanMethod.invoke(springContext, beanClass);
+            return true;
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException("Le contexte Spring ne permet pas de recuperer un bean.", e);
+        } catch (ReflectiveOperationException e) {
+            return false;
         }
     }
 

@@ -19,17 +19,31 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.Part;
 
 import mg.itu.framework.annotation.Binding;
-import mg.itu.framework.model.MapFile;
+import mg.itu.framework.session.MySession;
+
+import org.springframework.context.ApplicationContext;
 
 public class MethodeController {
 
     public Object[] getMethodParameters(HttpServletRequest request, Method method) {
+        return getMethodParameters(request, method, null);
+    }
+
+    public Object[] getMethodParameters(
+            HttpServletRequest request,
+            Method method,
+            ApplicationContext springContext) {
         Class<?>[] parameterTypes = method.getParameterTypes();
         Object[] parameters = new Object[parameterTypes.length];
         List<String> parameterNames = getParameterNames(request);
         int scalarParameterIndex = 0;
 
         for (int i = 0; i < parameterTypes.length; i++) {
+            if (parameterTypes[i] == MySession.class && springContext != null) {
+                parameters[i] = springContext.getBean(MySession.class);
+                continue;
+            }
+
             Binding binding = method.getParameters()[i].getAnnotation(Binding.class);
             if (binding != null) {
                 parameters[i] = bindParameter(request, parameterTypes[i], binding.value());

@@ -16,6 +16,7 @@ import java.util.Map;
 import mg.itu.framework.annotation.Controller;
 import mg.itu.framework.model.MethodClassMapping;
 import mg.itu.framework.model.UrlMethod;
+import mg.itu.framework.util.SpringContextManager;
 import mg.itu.framework.util.ClassUtil;
 
 @WebListener
@@ -30,6 +31,8 @@ public class AppStartUpListener implements ServletContextListener {
             if (springContext == null) {
                 throw new RuntimeException("Le contexte Spring n'a pas pu être récupéré. ");
             }
+
+            SpringContextManager.registerSessionBean(springContext);
 
             String packageName = context.getInitParameter("packageNames");
             String prefix = context.getInitParameter("prefix");

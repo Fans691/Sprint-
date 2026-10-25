@@ -144,7 +144,8 @@ public class FrontControllerServlet extends HttpServlet {
             } else if (parameterTypes.length == 1 && parameterTypes[0].isAssignableFrom(springContext.getClass())) {
                 result = mapping.getMethode().invoke(instance, springContext);
             } else {
-                Object[] parameters = methodeController.getMethodParameters(req, mapping.getMethode());
+                Object[] parameters = methodeController.getMethodParameters(
+                        req, mapping.getMethode(), springContext);
                 result = mapping.getMethode().invoke(instance, parameters);
             }
             
@@ -185,7 +186,6 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
 }
-
 
 
 
