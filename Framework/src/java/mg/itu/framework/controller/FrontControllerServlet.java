@@ -17,6 +17,7 @@ import mg.itu.framework.annotation.WebApi;
 import mg.itu.framework.annotation.Auth;
 import mg.itu.framework.session.MySession;
 import mg.itu.framework.util.AuthUtil;
+import mg.itu.framework.util.ControllerUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Controller
@@ -159,7 +160,7 @@ public class FrontControllerServlet extends HttpServlet {
                 }
             }
 
-            Object instance = mapping.getClasse().getDeclaredConstructor().newInstance();
+            Object instance = ControllerUtil.getInstance(mapping, req.getServletContext());
 
             Class<?>[] parameterTypes = mapping.getMethode().getParameterTypes();
             Object result;
