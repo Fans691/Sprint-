@@ -16,6 +16,7 @@ import mg.itu.framework.model.ModelAndView;
 import mg.itu.framework.annotation.WebApi;
 import mg.itu.framework.annotation.Auth;
 import mg.itu.framework.session.MySession;
+import mg.itu.framework.util.AuthUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Controller
@@ -27,6 +28,7 @@ public class FrontControllerServlet extends HttpServlet {
     private String prefix;
     private String suffix;
     private String sessionAuth;
+    private String roleAuth;
     private ApplicationContext springContext;
     private MethodeController methodeController = new MethodeController();
 
@@ -39,6 +41,7 @@ public class FrontControllerServlet extends HttpServlet {
             this.prefix = (String) context.getAttribute("prefix");
             this.suffix = (String) context.getAttribute("suffix");
             this.sessionAuth = (String) context.getAttribute("sessionAuth");
+            this.roleAuth = (String) context.getAttribute("roleAuth");
             this.springContext = (ApplicationContext) context.getAttribute("springContext");
 
             List<String> controllersFromContext = (List<String>) context.getAttribute("listController");
@@ -139,11 +142,21 @@ public class FrontControllerServlet extends HttpServlet {
     private void invokeMethod(MethodClassMapping mapping, HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         PrintWriter out = res.getWriter();
         try {
-            if (mapping.getMethode().isAnnotationPresent(Auth.class) && !isAuthenticated(req)) {
-                res.setContentType("text/html");
-                res.setCharacterEncoding("UTF-8");
-                out.println("<p>Cette methode exige une authentification</p>");
-                return;
+            Auth auth = mapping.getMethode().getAnnotation(Auth.class);
+            if (auth != null) {
+                HttpSession session = req.getSession(false);
+                if (getSessionValue(session, sessionAuth) == null) {
+                    res.setContentType("text/html");
+                    res.setCharacterEncoding("UTF-8");
+                    out.println("<p>Cette methode exige une authentification</p>");
+                    return;
+                }
+                if (!AuthUtil.verifyRoleAccess(getSessionValue(session, roleAuth), auth.role())) {
+                    res.setContentType("text/html");
+                    res.setCharacterEncoding("UTF-8");
+                    out.println("<p>Vous n'avez pas le role requis pour acceder a cette methode.</p>");
+                    return;
+                }
             }
 
             Object instance = mapping.getClasse().getDeclaredConstructor().newInstance();
@@ -197,12 +210,11 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
-    private boolean isAuthenticated(HttpServletRequest req) {
-        HttpSession session = req.getSession(false);
-        if (sessionAuth == null || session == null) {
-            return false;
+    private Object getSessionValue(HttpSession session, String key) {
+        if (session == null || key == null) {
+            return null;
         }
-        return new MySession(session).getAttribute(sessionAuth) != null;
+        return new MySession(session).getAttribute(key);
     }
 
 }
