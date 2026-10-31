@@ -1,0 +1,5 @@
+{
+    "java.project.sourcePaths": ["Framework/src/java"],
+    "java.project.referencedLibraries": ["Framework/lib/**/*.jar"],
+    "java.compile.nullAnalysis.mode": "automatic"
+}

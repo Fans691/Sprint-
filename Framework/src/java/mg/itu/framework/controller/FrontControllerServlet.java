@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 
 import jakarta.servlet.*;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.*;
 
 import org.springframework.context.ApplicationContext;
@@ -13,6 +14,8 @@ import mg.itu.framework.model.MethodClassMapping;
 import mg.itu.framework.model.UrlMethod;
 import mg.itu.framework.model.ModelAndView;
 import mg.itu.framework.annotation.WebApi;
+import mg.itu.framework.annotation.Auth;
+import mg.itu.framework.session.MySession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Controller
@@ -23,6 +26,7 @@ public class FrontControllerServlet extends HttpServlet {
     private Map<UrlMethod, MethodClassMapping> listUrlMapping = new HashMap<>();
     private String prefix;
     private String suffix;
+    private String sessionAuth;
     private ApplicationContext springContext;
     private MethodeController methodeController = new MethodeController();
 
@@ -34,6 +38,7 @@ public class FrontControllerServlet extends HttpServlet {
 
             this.prefix = (String) context.getAttribute("prefix");
             this.suffix = (String) context.getAttribute("suffix");
+            this.sessionAuth = (String) context.getAttribute("sessionAuth");
             this.springContext = (ApplicationContext) context.getAttribute("springContext");
 
             List<String> controllersFromContext = (List<String>) context.getAttribute("listController");
@@ -134,6 +139,13 @@ public class FrontControllerServlet extends HttpServlet {
     private void invokeMethod(MethodClassMapping mapping, HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         PrintWriter out = res.getWriter();
         try {
+            if (mapping.getMethode().isAnnotationPresent(Auth.class) && !isAuthenticated(req)) {
+                res.setContentType("text/html");
+                res.setCharacterEncoding("UTF-8");
+                out.println("<p>Cette methode exige une authentification</p>");
+                return;
+            }
+
             Object instance = mapping.getClasse().getDeclaredConstructor().newInstance();
 
             Class<?>[] parameterTypes = mapping.getMethode().getParameterTypes();
@@ -183,6 +195,14 @@ public class FrontControllerServlet extends HttpServlet {
             e.printStackTrace();
             out.println("Erreur lors du traitement de la requête : " + e.getMessage());
         }
+    }
+
+    private boolean isAuthenticated(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (sessionAuth == null || session == null) {
+            return false;
+        }
+        return new MySession(session).getAttribute(sessionAuth) != null;
     }
 
 }

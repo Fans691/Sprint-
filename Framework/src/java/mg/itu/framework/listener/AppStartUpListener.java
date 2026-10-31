@@ -16,7 +16,6 @@ import java.util.Map;
 import mg.itu.framework.annotation.Controller;
 import mg.itu.framework.model.MethodClassMapping;
 import mg.itu.framework.model.UrlMethod;
-import mg.itu.framework.util.SpringContextManager;
 import mg.itu.framework.util.ClassUtil;
 
 @WebListener
@@ -32,11 +31,10 @@ public class AppStartUpListener implements ServletContextListener {
                 throw new RuntimeException("Le contexte Spring n'a pas pu être récupéré. ");
             }
 
-            SpringContextManager.registerSessionBean(springContext);
-
             String packageName = context.getInitParameter("packageNames");
             String prefix = context.getInitParameter("prefix");
             String suffix = context.getInitParameter("suffix");
+            String sessionAuth = context.getInitParameter("sessionAuth");
 
             if (packageName == null || packageName.trim().isEmpty()) {
                 throw new RuntimeException("Le context-param 'packageNames' est introuvable dans web.xml.");
@@ -56,6 +54,7 @@ public class AppStartUpListener implements ServletContextListener {
             context.setAttribute("prefix", prefix);
             context.setAttribute("suffix", suffix);
             context.setAttribute("springContext", springContext);
+            context.setAttribute("sessionAuth", sessionAuth);
 
         } catch (Exception e) {
             throw new RuntimeException(e);

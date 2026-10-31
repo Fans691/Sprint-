@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.Part;
 
 import mg.itu.framework.annotation.Binding;
+import mg.itu.framework.model.MapFile;
 import mg.itu.framework.session.MySession;
 
 import org.springframework.context.ApplicationContext;
@@ -39,8 +40,8 @@ public class MethodeController {
         int scalarParameterIndex = 0;
 
         for (int i = 0; i < parameterTypes.length; i++) {
-            if (parameterTypes[i] == MySession.class && springContext != null) {
-                parameters[i] = springContext.getBean(MySession.class);
+            if (parameterTypes[i] == MySession.class) {
+                parameters[i] = new MySession(request.getSession());
                 continue;
             }
 
