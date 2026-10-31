@@ -11,6 +11,11 @@ Sprint - 10 :
 - La cle de session a verifier est le context-param `sessionAuth`
 - MySession est liee a la HttpSession : une session par utilisateur
 
+Sprint - 10 bis :
+- @Auth(role = "admin, manager") : la methode exige un utilisateur connecte ayant un des roles listes
+- La cle de session contenant le role est le context-param `roleAuth`
+- Sans `role`, @Auth exige seulement d'etre connecte
+
 Build : `Framework/run.bat` (Windows) ou `Framework/run.sh`
 - JDK 17+ requis (Spring 6), detecte automatiquement
 - Les jars manquants de `Framework/lib` sont telecharges depuis Maven Central
@@ -30,6 +35,7 @@ web.xml du projet :
 <context-param><param-name>prefix</param-name><param-value>/WEB-INF/views/</param-value></context-param>
 <context-param><param-name>suffix</param-name><param-value>.jsp</param-value></context-param>
 <context-param><param-name>sessionAuth</param-name><param-value>user</param-value></context-param>
+<context-param><param-name>roleAuth</param-name><param-value>role</param-value></context-param>
 
 <listener>
     <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
@@ -50,8 +56,9 @@ Exemple :
 @Controller
 public class AuthController {
     @UrlMapping(url = "/login", method = "POST")
-    public ModelAndView login(MySession session, String nom) {
+    public ModelAndView login(MySession session, String nom, String role) {
         session.setAttribute("user", nom);
+        session.setAttribute("role", role);
         return new ModelAndView("accueil");
     }
 
@@ -59,6 +66,12 @@ public class AuthController {
     @UrlMapping(url = "/profil")
     public ModelAndView profil() {
         return new ModelAndView("profil");
+    }
+
+    @Auth(role = "admin")
+    @UrlMapping(url = "/admin")
+    public ModelAndView admin() {
+        return new ModelAndView("admin");
     }
 
     @UrlMapping(url = "/logout")
